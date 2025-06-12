@@ -119,106 +119,113 @@
   <div class="game-container" id="game"></div>
 
   <script>
-    const paises = [
-      { nombre: "Colombia", imagen: "colombia.png" },
-      { nombre: "Brasil", imagen: "brasil.png" },
-      { nombre: "México", imagen: "mexico.png" },
-      { nombre: "Ecuador", imagen: "ecuador.png" },
-      { nombre: "Venezuela", imagen: "venezuela.png" },
-      { nombre: "Argentina", imagen: "argentina.png" },
-      { nombre: "Perú", imagen: "peru.png" },
-      { nombre: "Bolivia", imagen: "bolivia.png" },
-      { nombre: "Paraguay", imagen: "paraguay.png" },
-      { nombre: "Nicaragua", imagen: "nicaragua.png" }
-    ];
+  const paises = [
+    { nombre: "Colombia", imagen: "colombia.png" },
+    { nombre: "Brasil", imagen: "brasil.png" },
+    { nombre: "México", imagen: "mexico.png" },
+    { nombre: "Ecuador", imagen: "ecuador.png" },
+    { nombre: "Venezuela", imagen: "venezuela.png" },
+    { nombre: "Argentina", imagen: "argentina.png" },
+    { nombre: "Perú", imagen: "peru.png" },
+    { nombre: "Bolivia", imagen: "bolivia.png" },
+    { nombre: "Paraguay", imagen: "paraguay.png" },
+    { nombre: "Nicaragua", imagen: "nicaragua.png" }
+  ];
 
-    let cards = [];
-    paises.forEach(pais => {
-      cards.push({ tipo: "bandera", pais: pais.nombre, contenido: pais.imagen });
-      cards.push({ tipo: "nombre", pais: pais.nombre, contenido: pais.nombre });
-    });
+  const clickSound = new Audio("click.mp3");
 
-    cards = cards.sort(() => 0.5 - Math.random());
+  let cards = [];
+  paises.forEach(pais => {
+    cards.push({ tipo: "bandera", pais: pais.nombre, contenido: pais.imagen });
+    cards.push({ tipo: "nombre", pais: pais.nombre, contenido: pais.nombre });
+  });
 
-    const gameContainer = document.getElementById("game");
-    const intentosSpan = document.getElementById("intentos");
-    let intentos = 0;
+  cards = cards.sort(() => 0.5 - Math.random());
 
-    let firstCard = null;
-    let secondCard = null;
-    let lockBoard = false;
+  const gameContainer = document.getElementById("game");
+  const intentosSpan = document.getElementById("intentos");
+  let intentos = 0;
 
-    cards.forEach((card) => {
-      const cardWrapper = document.createElement("div");
-      cardWrapper.classList.add("card");
-      cardWrapper.dataset.tipo = card.tipo;
-      cardWrapper.dataset.pais = card.pais;
+  let firstCard = null;
+  let secondCard = null;
+  let lockBoard = false;
 
-      const cardInner = document.createElement("div");
-      cardInner.classList.add("card-inner");
+  cards.forEach((card) => {
+    const cardWrapper = document.createElement("div");
+    cardWrapper.classList.add("card");
+    cardWrapper.dataset.tipo = card.tipo;
+    cardWrapper.dataset.pais = card.pais;
 
-      const front = document.createElement("div");
-      front.classList.add("card-face", "card-front");
-      const earthImg = document.createElement("img");
-      earthImg.src = "./img/tierra.png"; // Imagen de planeta
-      front.appendChild(earthImg);
+    const cardInner = document.createElement("div");
+    cardInner.classList.add("card-inner");
 
-      const back = document.createElement("div");
-      back.classList.add("card-face", "card-back");
+    const front = document.createElement("div");
+    front.classList.add("card-face", "card-front");
+    const earthImg = document.createElement("img");
+    earthImg.src = "./img/tierra.png";
+    front.appendChild(earthImg);
 
-      if (card.tipo === "bandera") {
-        const img = document.createElement("img");
-        img.src = `./img/${card.contenido}`;
-        back.appendChild(img);
-      } else {
-        const span = document.createElement("span");
-        span.textContent = card.contenido;
-        back.appendChild(span);
-      }
+    const back = document.createElement("div");
+    back.classList.add("card-face", "card-back");
 
-      cardInner.appendChild(front);
-      cardInner.appendChild(back);
-      cardWrapper.appendChild(cardInner);
-
-      cardWrapper.addEventListener("click", () => {
-        if (lockBoard || cardWrapper.classList.contains("flipped")) return;
-        cardWrapper.classList.add("flipped");
-
-        if (!firstCard) {
-          firstCard = cardWrapper;
-        } else {
-          secondCard = cardWrapper;
-          lockBoard = true;
-
-          intentos++;
-          intentosSpan.textContent = intentos;
-
-          const isMatch =
-            firstCard.dataset.pais === secondCard.dataset.pais &&
-            firstCard.dataset.tipo !== secondCard.dataset.tipo;
-
-          if (isMatch) {
-            firstCard.classList.add("matched");
-            secondCard.classList.add("matched");
-            resetBoard();
-          } else {
-            setTimeout(() => {
-              firstCard.classList.remove("flipped");
-              secondCard.classList.remove("flipped");
-              resetBoard();
-            }, 800);
-          }
-        }
-      });
-
-      gameContainer.appendChild(cardWrapper);
-    });
-
-    function resetBoard() {
-      [firstCard, secondCard] = [null, null];
-      lockBoard = false;
+    if (card.tipo === "bandera") {
+      const img = document.createElement("img");
+      img.src = `./img/${card.contenido}`;
+      back.appendChild(img);
+    } else {
+      const span = document.createElement("span");
+      span.textContent = card.contenido;
+      back.appendChild(span);
     }
-  </script>
+
+    cardInner.appendChild(front);
+    cardInner.appendChild(back);
+    cardWrapper.appendChild(cardInner);
+
+    cardWrapper.addEventListener("click", () => {
+      if (lockBoard || cardWrapper.classList.contains("flipped")) return;
+
+      // 🔊 Reproducir sonido al hacer clic
+      clickSound.currentTime = 0;
+      clickSound.play();
+
+      cardWrapper.classList.add("flipped");
+
+      if (!firstCard) {
+        firstCard = cardWrapper;
+      } else {
+        secondCard = cardWrapper;
+        lockBoard = true;
+
+        intentos++;
+        intentosSpan.textContent = intentos;
+
+        const isMatch =
+          firstCard.dataset.pais === secondCard.dataset.pais &&
+          firstCard.dataset.tipo !== secondCard.dataset.tipo;
+
+        if (isMatch) {
+          firstCard.classList.add("matched");
+          secondCard.classList.add("matched");
+          resetBoard();
+        } else {
+          setTimeout(() => {
+            firstCard.classList.remove("flipped");
+            secondCard.classList.remove("flipped");
+            resetBoard();
+          }, 800);
+        }
+      }
+    });
+
+    gameContainer.appendChild(cardWrapper);
+  });
+
+  function resetBoard() {
+    [firstCard, secondCard] = [null, null];
+    lockBoard = false;
+  }
+</script>
 </body>
 </html>
 
