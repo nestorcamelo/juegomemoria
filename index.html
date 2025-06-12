@@ -73,6 +73,11 @@
       background-color: #eee;
     }
 
+    .card-front img {
+      width: 40%;
+      height: auto;
+    }
+
     .card-back {
       transform: rotateY(180deg);
       flex-direction: column;
@@ -148,7 +153,9 @@
 
       const front = document.createElement("div");
       front.classList.add("card-face", "card-front");
-      front.textContent = "?";
+      const earthImg = document.createElement("img");
+      earthImg.src = "./img/tierra.png";
+      front.appendChild(earthImg);
 
       const back = document.createElement("div");
       back.classList.add("card-face", "card-back");
