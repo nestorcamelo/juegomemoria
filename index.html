@@ -88,13 +88,19 @@
       max-height: 80%;
     }
 
+    /* Mejora visual para cartas emparejadas */
     .card.matched .card-inner {
       animation: matched 0.4s ease;
     }
 
+    .card.matched {
+          border-radius: 15px;
+    box-shadow: 0 0 15px 4px rgba(0, 145, 255, 0.6);
+    }
+
     @keyframes matched {
       0% { transform: scale(1); }
-      50% { transform: scale(1.1); }
+      50% { transform: scale(1.05); }
       100% { transform: scale(1); }
     }
 
@@ -142,7 +148,7 @@
     let secondCard = null;
     let lockBoard = false;
 
-    cards.forEach((card, index) => {
+    cards.forEach((card) => {
       const cardWrapper = document.createElement("div");
       cardWrapper.classList.add("card");
       cardWrapper.dataset.tipo = card.tipo;
@@ -154,7 +160,7 @@
       const front = document.createElement("div");
       front.classList.add("card-face", "card-front");
       const earthImg = document.createElement("img");
-      earthImg.src = "./img/tierra.png";
+      earthImg.src = "./img/tierra.png"; // Imagen de planeta
       front.appendChild(earthImg);
 
       const back = document.createElement("div");
@@ -215,5 +221,6 @@
   </script>
 </body>
 </html>
+
 
 
