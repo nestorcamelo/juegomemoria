@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Juego de Memoria - Banderas</title>
   <style>
     * {
@@ -19,6 +19,8 @@
       align-items: center;
       min-height: 100vh;
       padding: 20px;
+      position: relative;
+      overflow: hidden;
     }
 
     .counter {
@@ -88,20 +90,68 @@
       max-height: 80%;
     }
 
-    /* Mejora visual para cartas emparejadas */
     .card.matched .card-inner {
       animation: matched 0.4s ease;
     }
 
     .card.matched {
-          border-radius: 15px;
-    box-shadow: 0 0 15px 4px rgba(0, 145, 255, 0.6);
+      border-radius: 15px;
+      box-shadow: 0 0 15px 4px rgba(0, 145, 255, 0.6);
     }
 
     @keyframes matched {
       0% { transform: scale(1); }
       50% { transform: scale(1.05); }
       100% { transform: scale(1); }
+    }
+
+    #win-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      font-size: 24px;
+      text-align: center;
+      z-index: 999;
+      animation: fadeInZoom 0.6s ease forwards;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #win-message button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    @keyframes fadeInZoom {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    canvas.confetti-canvas {
+      position: fixed;
+      pointer-events: none;
+      top: 0;
+      left: 0;
+      z-index: 1000;
     }
 
     @media (max-width: 500px) {
@@ -118,114 +168,182 @@
   <div class="counter">Intentos: <span id="intentos">0</span></div>
   <div class="game-container" id="game"></div>
 
+  <div id="win-message" class="hidden">
+    🎉 ¡Felicidades, ganaste! 🎉
+    <br>
+    <button onclick="location.reload()">Reiniciar Juego</button>
+  </div>
+
+  <!-- Sonidos -->
+  <audio id="clickSound" src="click.mp3"></audio>
+  <audio id="matchSound" src="correcto.mp3"></audio>
+  <audio id="winSound" src="win.mp3"></audio>
+
+  <!-- Confetti JS (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
   <script>
-  const paises = [
-    { nombre: "Colombia", imagen: "colombia.png" },
-    { nombre: "Brasil", imagen: "brasil.png" },
-    { nombre: "México", imagen: "mexico.png" },
-    { nombre: "Ecuador", imagen: "ecuador.png" },
-    { nombre: "Venezuela", imagen: "venezuela.png" },
-    { nombre: "Argentina", imagen: "argentina.png" },
-    { nombre: "Perú", imagen: "peru.png" },
-    { nombre: "Bolivia", imagen: "bolivia.png" },
-    { nombre: "Paraguay", imagen: "paraguay.png" },
-    { nombre: "Nicaragua", imagen: "nicaragua.png" }
-  ];
+    const paises = [
+      { nombre: "Colombia", imagen: "colombia.png" },
+      { nombre: "Brasil", imagen: "brasil.png" },
+      { nombre: "México", imagen: "mexico.png" },
+      { nombre: "Ecuador", imagen: "ecuador.png" },
+      { nombre: "Venezuela", imagen: "venezuela.png" },
+      { nombre: "Argentina", imagen: "argentina.png" },
+      { nombre: "Perú", imagen: "peru.png" },
+      { nombre: "Bolivia", imagen: "bolivia.png" },
+      { nombre: "Paraguay", imagen: "paraguay.png" },
+      { nombre: "Nicaragua", imagen: "nicaragua.png" }
+    ];
 
-  const clickSound = new Audio("click.mp3");
-
-  let cards = [];
-  paises.forEach(pais => {
-    cards.push({ tipo: "bandera", pais: pais.nombre, contenido: pais.imagen });
-    cards.push({ tipo: "nombre", pais: pais.nombre, contenido: pais.nombre });
-  });
-
-  cards = cards.sort(() => 0.5 - Math.random());
-
-  const gameContainer = document.getElementById("game");
-  const intentosSpan = document.getElementById("intentos");
-  let intentos = 0;
-
-  let firstCard = null;
-  let secondCard = null;
-  let lockBoard = false;
-
-  cards.forEach((card) => {
-    const cardWrapper = document.createElement("div");
-    cardWrapper.classList.add("card");
-    cardWrapper.dataset.tipo = card.tipo;
-    cardWrapper.dataset.pais = card.pais;
-
-    const cardInner = document.createElement("div");
-    cardInner.classList.add("card-inner");
-
-    const front = document.createElement("div");
-    front.classList.add("card-face", "card-front");
-    const earthImg = document.createElement("img");
-    earthImg.src = "./img/tierra.png";
-    front.appendChild(earthImg);
-
-    const back = document.createElement("div");
-    back.classList.add("card-face", "card-back");
-
-    if (card.tipo === "bandera") {
-      const img = document.createElement("img");
-      img.src = `./img/${card.contenido}`;
-      back.appendChild(img);
-    } else {
-      const span = document.createElement("span");
-      span.textContent = card.contenido;
-      back.appendChild(span);
-    }
-
-    cardInner.appendChild(front);
-    cardInner.appendChild(back);
-    cardWrapper.appendChild(cardInner);
-
-    cardWrapper.addEventListener("click", () => {
-      if (lockBoard || cardWrapper.classList.contains("flipped")) return;
-
-      // 🔊 Reproducir sonido al hacer clic
-      clickSound.currentTime = 0;
-      clickSound.play();
-
-      cardWrapper.classList.add("flipped");
-
-      if (!firstCard) {
-        firstCard = cardWrapper;
-      } else {
-        secondCard = cardWrapper;
-        lockBoard = true;
-
-        intentos++;
-        intentosSpan.textContent = intentos;
-
-        const isMatch =
-          firstCard.dataset.pais === secondCard.dataset.pais &&
-          firstCard.dataset.tipo !== secondCard.dataset.tipo;
-
-        if (isMatch) {
-          firstCard.classList.add("matched");
-          secondCard.classList.add("matched");
-          resetBoard();
-        } else {
-          setTimeout(() => {
-            firstCard.classList.remove("flipped");
-            secondCard.classList.remove("flipped");
-            resetBoard();
-          }, 800);
-        }
-      }
+    let cards = [];
+    paises.forEach(pais => {
+      cards.push({ tipo: "bandera", pais: pais.nombre, contenido: pais.imagen });
+      cards.push({ tipo: "nombre", pais: pais.nombre, contenido: pais.nombre });
     });
 
-    gameContainer.appendChild(cardWrapper);
-  });
+    cards = cards.sort(() => 0.5 - Math.random());
 
-  function resetBoard() {
-    [firstCard, secondCard] = [null, null];
-    lockBoard = false;
-  }
-</script>
+    const gameContainer = document.getElementById("game");
+    const intentosSpan = document.getElementById("intentos");
+    const winMessage = document.getElementById("win-message");
+    const clickSound = document.getElementById("clickSound");
+    const matchSound = document.getElementById("matchSound");
+    const winSound = document.getElementById("winSound");
+
+    let intentos = 0;
+    let firstCard = null;
+    let secondCard = null;
+    let lockBoard = false;
+    let matchedCount = 0;
+    const totalPairs = paises.length;
+
+    winMessage.classList.add("hidden"); // Asegura que esté oculto
+
+    cards.forEach((card) => {
+      const cardWrapper = document.createElement("div");
+      cardWrapper.classList.add("card");
+      cardWrapper.dataset.tipo = card.tipo;
+      cardWrapper.dataset.pais = card.pais;
+
+      const cardInner = document.createElement("div");
+      cardInner.classList.add("card-inner");
+
+      const front = document.createElement("div");
+      front.classList.add("card-face", "card-front");
+      const earthImg = document.createElement("img");
+      earthImg.src = "./img/tierra.png";
+      front.appendChild(earthImg);
+
+      const back = document.createElement("div");
+      back.classList.add("card-face", "card-back");
+
+      if (card.tipo === "bandera") {
+        const img = document.createElement("img");
+        img.src = `./img/${card.contenido}`;
+        back.appendChild(img);
+      } else {
+        const span = document.createElement("span");
+        span.textContent = card.contenido;
+        back.appendChild(span);
+      }
+
+      cardInner.appendChild(front);
+      cardInner.appendChild(back);
+      cardWrapper.appendChild(cardInner);
+
+      cardWrapper.addEventListener("click", () => {
+        if (lockBoard || cardWrapper.classList.contains("flipped")) return;
+
+        // Solución para el sonido: reiniciar y reproducir
+        try {
+          clickSound.currentTime = 0;
+          clickSound.play().catch(e => console.log("Error al reproducir sonido:", e));
+        } catch (e) {
+          console.log("Error con el audio:", e);
+        }
+
+        cardWrapper.classList.add("flipped");
+
+        if (!firstCard) {
+          firstCard = cardWrapper;
+        } else {
+          secondCard = cardWrapper;
+          lockBoard = true;
+
+          intentos++;
+          intentosSpan.textContent = intentos;
+
+          const isMatch =
+            firstCard.dataset.pais === secondCard.dataset.pais &&
+            firstCard.dataset.tipo !== secondCard.dataset.tipo;
+
+          if (isMatch) {
+            try {
+              matchSound.currentTime = 0;
+              matchSound.play().catch(e => console.log("Error al reproducir sonido:", e));
+            } catch (e) {
+              console.log("Error con el audio:", e);
+            }
+            firstCard.classList.add("matched");
+            secondCard.classList.add("matched");
+            matchedCount++;
+            resetBoard();
+
+            if (matchedCount === totalPairs) {
+              setTimeout(() => {
+                try {
+                  winSound.currentTime = 0;
+                  winSound.play().catch(e => console.log("Error al reproducir sonido:", e));
+                } catch (e) {
+                  console.log("Error con el audio:", e);
+                }
+                winMessage.classList.remove("hidden");
+                launchConfetti();
+              }, 600);
+            }
+          } else {
+            setTimeout(() => {
+              firstCard.classList.remove("flipped");
+              secondCard.classList.remove("flipped");
+              resetBoard();
+            }, 800);
+          }
+        }
+      });
+
+      gameContainer.appendChild(cardWrapper);
+    });
+
+    function resetBoard() {
+      [firstCard, secondCard] = [null, null];
+      lockBoard = false;
+    }
+
+    function launchConfetti() {
+      const duration = 3 * 1000;
+      const end = Date.now() + duration;
+
+      (function frame() {
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+        });
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      })();
+    }
+  </script>
 </body>
 </html>
 
